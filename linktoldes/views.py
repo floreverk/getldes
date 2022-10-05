@@ -15,34 +15,66 @@ def getldes(request):
         if form.is_valid():
             objectnumber = form.cleaned_data['objectnumber']
             institution = form.cleaned_data['institution']
-            ssl._create_default_https_context = ssl._create_unverified_context
 
-            sparqlQuery = """
-                PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-                PREFIX adms: <http://www.w3.org/ns/adms#>
-                PREFIX prov: <http://www.w3.org/ns/prov#>
-                SELECT DISTINCT ?ldes FROM <http://stad.gent/ldes/""" + institution + """> 
-                WHERE { 
-                ?object adms:identifier ?identifier.
-                ?identifier skos:notation ?objectnumber.
-                FILTER (regex(?objectnumber,""" + ' "^' + objectnumber + '$"' + """, "i")).
-                ?object prov:generatedAtTime ?time.
-                BIND(URI(concat("https://apidg.gent.be/opendata/adlib2eventstream/v1/"""+ institution +"""/objecten?generatedAtTime=", ?time)) AS ?ldes)
-                } ORDER BY DESC(?object)
-                """
+            if institution == 'archief':
+                ssl._create_default_https_context = ssl._create_unverified_context
 
-            df_sparql = pd.DataFrame()
-            sparql = SPARQL("https://stad.gent/sparql")
-            qlod = sparql.queryAsListOfDicts(sparqlQuery)
-            if qlod == []:
-                return render(request, 'error.html')
+                sparqlQuery = """
+                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+                    PREFIX adms: <http://www.w3.org/ns/adms#>
+                    PREFIX prov: <http://www.w3.org/ns/prov#>
+                    SELECT DISTINCT ?ldes FROM <http://stad.gent/ldes/""" + institution + """> 
+                    WHERE { 
+                    ?object adms:identifier ?identifier.
+                    ?identifier skos:notation ?objectnumber.
+                    FILTER (regex(?objectnumber,""" + ' "^' + objectnumber + '$"' + """, "i")).
+                    ?object prov:generatedAtTime ?time.
+                    BIND(URI(concat("https://apidg.gent.be/opendata/adlib2eventstream/v1/"""+ "archiefgent" +"""/objecten?generatedAtTime=", ?time)) AS ?ldes)
+                    } ORDER BY DESC(?object)
+                    """
+
+                df_sparql = pd.DataFrame()
+                sparql = SPARQL("https://stad.gent/sparql")
+                qlod = sparql.queryAsListOfDicts(sparqlQuery)
+                if qlod == []:
+                    return render(request, 'error.html')
+                else:
+                    csv = CSV.toCSV(qlod)
+                    df_result = pd.DataFrame([x.split(',') for x in csv.split('\n')])
+                    df_sparql = df_sparql.append(df_result, ignore_index=True)
+                    df_sparql[0] = df_sparql[0].str.replace(r'"', '')
+                    ldes = df_sparql[0].iloc[2]
+                    return render(request, 'ldes.html', {'ldes': ldes})
+            
             else:
-                csv = CSV.toCSV(qlod)
-                df_result = pd.DataFrame([x.split(',') for x in csv.split('\n')])
-                df_sparql = df_sparql.append(df_result, ignore_index=True)
-                df_sparql[0] = df_sparql[0].str.replace(r'"', '')
-                ldes = df_sparql[0].iloc[2]
-                return render(request, 'ldes.html', {'ldes': ldes})
+                ssl._create_default_https_context = ssl._create_unverified_context
+
+                sparqlQuery = """
+                    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+                    PREFIX adms: <http://www.w3.org/ns/adms#>
+                    PREFIX prov: <http://www.w3.org/ns/prov#>
+                    SELECT DISTINCT ?ldes FROM <http://stad.gent/ldes/""" + institution + """> 
+                    WHERE { 
+                    ?object adms:identifier ?identifier.
+                    ?identifier skos:notation ?objectnumber.
+                    FILTER (regex(?objectnumber,""" + ' "^' + objectnumber + '$"' + """, "i")).
+                    ?object prov:generatedAtTime ?time.
+                    BIND(URI(concat("https://apidg.gent.be/opendata/adlib2eventstream/v1/"""+ institution +"""/objecten?generatedAtTime=", ?time)) AS ?ldes)
+                    } ORDER BY DESC(?object)
+                    """
+
+                df_sparql = pd.DataFrame()
+                sparql = SPARQL("https://stad.gent/sparql")
+                qlod = sparql.queryAsListOfDicts(sparqlQuery)
+                if qlod == []:
+                    return render(request, 'error.html')
+                else:
+                    csv = CSV.toCSV(qlod)
+                    df_result = pd.DataFrame([x.split(',') for x in csv.split('\n')])
+                    df_sparql = df_sparql.append(df_result, ignore_index=True)
+                    df_sparql[0] = df_sparql[0].str.replace(r'"', '')
+                    ldes = df_sparql[0].iloc[2]
+                    return render(request, 'ldes.html', {'ldes': ldes})
 
     form = ContactForm()
     return render(request, 'form.html', {'form':form})
