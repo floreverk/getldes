@@ -43,7 +43,7 @@ def getldes(request):
                     df_result = pd.DataFrame([x.split(',') for x in csv.split('\n')])
                     df_sparql = df_sparql.append(df_result, ignore_index=True)
                     df_sparql[0] = df_sparql[0].str.replace(r'"', '')
-                    ldes = df_sparql[0].iloc[2]
+                    ldes = df_sparql[0].iloc[1]
                     return render(request, 'ldes.html', {'ldes': ldes})
             
             else:
@@ -73,7 +73,7 @@ def getldes(request):
                     df_result = pd.DataFrame([x.split(',') for x in csv.split('\n')])
                     df_sparql = df_sparql.append(df_result, ignore_index=True)
                     df_sparql[0] = df_sparql[0].str.replace(r'"', '')
-                    ldes = df_sparql[0].iloc[2]
+                    ldes = df_sparql[0].iloc[1]
                     return render(request, 'ldes.html', {'ldes': ldes})
 
     form = ContactForm()
